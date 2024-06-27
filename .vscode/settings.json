@@ -1,0 +1,13 @@
+{
+    "files.associations": {
+        "stdint.h": "c",
+        "save.h": "c",
+        "world.h": "c",
+        "getcsc.h": "c",
+        "blocks.h": "c",
+        "graphx.h": "c",
+        "cdefs.h": "c",
+        "assert.h": "c"
+    },
+    "C_Cpp.errorSquiggles": "enabled"
+}
