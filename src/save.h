@@ -1,13 +1,15 @@
 #ifndef SAVE_H
 #define SAVE_H
 
-/**
- * Stores a save file for debugging.
- *
- * @param[in] filename AppVar name.
- * @returns 0 on error
- */
-uint8_t debugSave(const char *filename);
+
+#define LOOKUP_SIZE 256
+typedef struct saveHeader
+{
+    world_t world;
+    uint8_t playerCount;
+    uint8_t chunkCount;
+    chunk_entry_t chunkLookup[LOOKUP_SIZE];
+} saveheader_t;
 
 /**
  * Loads a save file by name.
@@ -31,10 +33,11 @@ uint8_t readChunk(chunk_t *destination, uint24_t chunkID);
 uint8_t updateChunk(chunk_t *chunk);
 
 void printSave();
-uint8_t closeSave();
 
 void printSaveDebug();
 
 uint8_t writeSave();
+
+uint8_t defaultSave();
 
 #endif

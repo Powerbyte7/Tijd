@@ -10,18 +10,10 @@
 #include <assert.h>
 #include <stddef.h>
 #include <stdio.h>
-
-#define LOOKUP_SIZE 256
+#include <debug.h>
 
 // Internal state
-static struct saveHeader
-{
-    world_t world;
-    uint8_t playerCount;
-    uint8_t chunkCount;
-    chunk_entry_t chunkLookup[LOOKUP_SIZE];
-} s_saveHeader;
-
+static saveheader_t s_saveHeader;
 static uint8_t s_activeSaveHandle;
 static uint24_t s_saveChunkOffset;
 
@@ -79,49 +71,19 @@ uint8_t appendChunkLookup(uint24_t chunkID)
     return 0;
 }
 
-uint8_t debugSave(const char *filename)
-{
-    const uint8_t saveHandle = ti_Open(filename, "w");
-
-    // Save failed to load
-    if (!saveHandle)
-    {
-        return 0;
-    }
-
-    struct saveHeader debugSave = {
-        .world = {
-            .seed = 1,
-            .type = 1,
-            .name = "Orbis",
-        },
-        .playerCount = 0,
-        .chunkCount = 0,
-    };
-
-    uint8_t error = !ti_Write(&debugSave, sizeof(debugSave), 1, saveHandle);
-
-    if (error)
-    {
-        return 0;
-    }
-
-    return ti_Close(saveHandle);
-}
-
 uint8_t loadSave(const char *filename)
 {
-    s_activeSaveHandle = ti_Open(filename, "a+");
-    ti_Rewind(s_activeSaveHandle);
+    s_activeSaveHandle = ti_Open(filename, "r+");
 
     // Save failed to load
-    if (!s_activeSaveHandle)
+    if (s_activeSaveHandle == 0)
     {
         return 0;
     }
 
     // Read world save header to determine save data layout
-    ti_Read(&s_saveHeader, sizeof(s_saveHeader), 1, s_activeSaveHandle);
+    uint8_t count = ti_Read(&s_saveHeader, sizeof(s_saveHeader), 1, s_activeSaveHandle);
+    assert((count == 1) && "loadSave: Count should be 1");
 
     // Mutably load characters
     for (uint8_t i = 0; i < s_saveHeader.playerCount; i++)
@@ -174,14 +136,14 @@ uint8_t updateChunk(chunk_t *chunk)
     // Chunk not found
     if (index == INVALID_CHUNK)
     {
-        return 1;
+        return 0;
     }
 
     uint24_t saveOffset = (index * sizeof(*chunk)) + s_saveChunkOffset;
     ti_Seek(saveOffset, SEEK_SET, s_activeSaveHandle);
     uint8_t writeCount = ti_Write(chunk, sizeof(*chunk), 1, s_activeSaveHandle);
 
-    return writeCount != 1;
+    return writeCount == 1;
 }
 
 uint8_t appendChunk(chunk_t *chunk)
@@ -202,11 +164,6 @@ void printSave()
     os_PutStrLine(s_saveHeader.world.name);
 }
 
-uint8_t closeSave()
-{
-    return ti_Close(s_activeSaveHandle);
-}
-
 void printSaveDebug()
 {
     gfx_PrintStringXY(s_saveHeader.world.name, 0, 0);
@@ -225,12 +182,58 @@ void printSaveDebug()
 
 uint8_t writeSave()
 {
-    updateAllChunks();
+    uint8_t err = updateAllChunks();
+    if (err != 0)
+    {
+        return 1;
+    }
 
-    ti_Rewind(s_activeSaveHandle);
-    ti_Write(&s_saveHeader, sizeof(s_saveHeader), 1, s_activeSaveHandle);
-    ti_Close(s_activeSaveHandle);
+    err = ti_Rewind(s_activeSaveHandle);
+
+    err = ti_Write(&s_saveHeader, sizeof(s_saveHeader), 1, s_activeSaveHandle);
+    if (err != 1)
+    {
+        return 1;
+    }
+
+    err = ti_Close(s_activeSaveHandle);
+    assert((err != 0) && "Failed to close save");
+    if (err == 0)
+    {
+        return 1;
+    }
+
     s_activeSaveHandle = 0;
 
     return 0;
+}
+
+uint8_t defaultSave(const char *filename)
+{   
+    const uint8_t saveHandle = ti_Open(filename, "w");
+
+    // Save failed to load
+    if (!saveHandle)
+    {
+        return 0;
+    }
+
+    struct saveHeader orbisSave = {
+        .world = {
+            .seed = 1,
+            .type = 1,
+            .name = "Orbis",
+        },
+        .playerCount = 0,
+        .chunkCount = 0,
+    };
+
+    uint8_t error = !ti_Write(&orbisSave, sizeof(orbisSave), 1, saveHandle);
+
+    if (error)
+    {
+        return 0;
+    }
+
+    return ti_Close(saveHandle);
 }

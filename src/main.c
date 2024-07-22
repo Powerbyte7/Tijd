@@ -7,7 +7,14 @@
 #include "save.h"
 
 // TEMP
+
+#include <assert.h>
+#include <debug.h>
 #include <ti/screen.h>
+
+#ifdef TEST
+#include "test.h"
+#endif
 
 // Tasks are peformed by a character
 
@@ -43,13 +50,20 @@ gfx_UninitedSprite(scaper_head_left, scaper_head_right_width, scaper_head_right_
 
 void render(uint24_t posX, uint24_t posY)
 {
-    uint8_t block;
+    block_t block;
     for (uint8_t renderX = 0; renderX < 17; renderX++)
     {
         for (uint8_t renderY = 0; renderY < 15; renderY++)
         {
 
             block = getBlock(posX + renderX, posY + renderY);
+
+            #ifdef DEBUG
+                gfx_SetColor(block);
+                gfx_FillRectangle_NoClip(renderX * 16, renderY * 16, 16, 16);
+
+            #else
+
             switch (block)
             {
             case DIRT:
@@ -65,7 +79,8 @@ void render(uint24_t posX, uint24_t posY)
                 gfx_SetColor(2);
                 gfx_FillRectangle_NoClip(renderX * 16, renderY * 16, 16, 16);
                 break;
-            }
+            }   
+            #endif
         }
     }
     gfx_SetColor(0);
@@ -90,30 +105,39 @@ int main()
 
     const char saveName[] = "TEST";
 
-    uint8_t err;
-    // err = !debugSave(saveName);
-    // if (err)
-    // {
-    //     os_PutStrFull("Debug Fail");
-    //     return 1;
-    // }
+    uint8_t err = 0;
+    // err = !defaultSave(saveName);
+    if (err)
+    {
+        os_PutStrFull("Debug Fail");
+        return 1;
+    }
 
     err = !loadSave(saveName);
     if (err)
     {
         os_PutStrFull("Save Fail");
+        while (os_GetCSC() != sk_Clear)
+        {
+        }
         return 1;
     }
+
+
 
     /* Initialize graphics drawing */
     gfx_Begin();
     gfx_SetDrawBuffer();
+
+    #ifndef DEBUG 
     gfx_SetPalette(global_palette, sizeof_global_palette, 0);
+    #endif
+    
     gfx_FillScreen(2); // Sky
 
     static uint24_t x = 8000000;
     static uint24_t y = 1024;
-    static uint8_t key;
+    static uint8_t key;   
 
     do
     {
@@ -162,11 +186,20 @@ int main()
 
     writeSave();
 
-    if (err)
-    {
-        os_PutStrFull("Chunk fail");
-        while (os_GetCSC() != sk_Clear)
-        {
-        }
+    #ifdef TEST
+    dbg_printf("Starting test!\n");
+    for (uint8_t i = 0; i < 20; i++) {
+        dbg_printf("Test %d\n", i);
+        worldTest();
     }
+    #endif
+
+
+    // if (err)
+    // {
+    //     os_PutStrFull("Chunk fail");
+    //     while (os_GetCSC() != sk_Clear)
+    //     {
+    //     }
+    // }
 }

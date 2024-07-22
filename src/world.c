@@ -62,16 +62,16 @@ static chunk_t *getChunk(uint24_t chunkID)
     
     if (s_chunkCache[s_cacheCounter].chunkID != 0)
     {
-        uint8_t err = updateChunk(&s_chunkCache[s_cacheCounter]);
-        if (!err) {
-            return 0;
-        }
-
+        // uint8_t err = 
+        updateChunk(&s_chunkCache[s_cacheCounter]);
+        // if (!err) {
+        //     return 0;
+        // }
     }
     
-    uint8_t found = !readChunk(&s_chunkCache[s_cacheCounter], chunkID);
+    uint8_t err = readChunk(&s_chunkCache[s_cacheCounter], chunkID);
 
-    if (!found)
+    if (err)
     {
         generateChunk(&s_chunkCache[s_cacheCounter], chunkID, OVERWORLD);
     }
@@ -86,6 +86,8 @@ block_t getBlock(uint24_t pos_x, uint24_t pos_y)
     uint8_t chunk_y = pos_y >> 3;
 
     chunk_t *chunk = getChunk(CHUNK_ID(OVERWORLD, chunk_x, chunk_y));
+
+    assert((chunk != 0) && "getBlock: Chunk not found.");
 
     // Clamp numbers to 0-7 range
     uint8_t chunk_block_x = pos_x & 0x7;
@@ -103,9 +105,7 @@ world_error_t placeBlock(uint24_t pos_x, uint24_t pos_y, block_t block)
     uint24_t chunk_id = CHUNK_ID(OVERWORLD, chunk_x, chunk_y);
     chunk_t *chunk = getChunk(chunk_id);
 
-    if (!chunk) {
-        return LOAD_ERROR;
-    }
+    assert((chunk != 0) && "getBlock: Chunk not found.");
 
     // Clamp numbers to 0-7 range
     uint8_t chunk_block_x = pos_x & 0x7;
@@ -124,30 +124,31 @@ world_error_t placeBlock(uint24_t pos_x, uint24_t pos_y, block_t block)
     appendChunkLookup(chunk_id);
 
     // Cascade background blocks downwards
-    while (1)
-    {
-        chunk_block_y += 1;
-        if (chunk_block_y == 8)
-        {
-            chunk_y += 1;
-            chunk_block_y = 0;
-            chunk_id = CHUNK_ID(OVERWORLD, chunk_x, chunk_y);
-            chunk = getChunk(chunk_id);
-        }
+    // while (1)
+    // {
+    //     chunk_block_y += 1;
+    //     if (chunk_block_y == 8)
+    //     {
+    //         chunk_y += 1;
+    //         chunk_block_y = 0;
+    //         chunk_id = CHUNK_ID(OVERWORLD, chunk_x, chunk_y);
+    //         chunk = getChunk(chunk_id);
+    //         assert((chunk) && "getBlock: Chunk not found.");
+    //     }
 
         
-        block = chunk->blocks[chunk_block_x * 8 + chunk_block_y];
+    //     block = chunk->blocks[chunk_block_x * 8 + chunk_block_y];
 
-        if (block == AIR)
-        {
-            chunk->blocks[chunk_block_x * 8 + chunk_block_y] = DIRT;
-            appendChunkLookup(chunk_id);
-        }
-        else
-        {
-            break;
-        }
-    }
+    //     if (block == AIR)
+    //     {
+    //         chunk->blocks[chunk_block_x * 8 + chunk_block_y] = DIRT;
+    //         appendChunkLookup(chunk_id);
+    //     }
+    //     else
+    //     {
+    //         break;
+    //     }
+    // }
 
     return 0;
 }
@@ -185,10 +186,11 @@ void printCacheDebug() {
     gfx_PrintUInt(s_cacheCounter,4);
 }
 
-void updateAllChunks() {
+uint8_t updateAllChunks() {
     for (uint8_t i = 0; i < CACHE_SIZE; i++) {
         if (s_chunkCache[i].chunkID != 0) {
             updateChunk(&s_chunkCache[i]);
         }
     }
+    return 0;
 }

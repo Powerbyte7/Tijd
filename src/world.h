@@ -49,7 +49,7 @@ world_error_t breakBlock(uint24_t pox_x, uint24_t pox_y);
 
 uint8_t saveWorld();
 void printCacheDebug();
-void updateAllChunks();
+uint8_t updateAllChunks();
 
 
 #endif
