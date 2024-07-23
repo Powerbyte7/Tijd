@@ -58,11 +58,11 @@ void render(uint24_t posX, uint24_t posY)
 
             block = getBlock(posX + renderX, posY + renderY);
 
-            #ifdef DEBUG
-                gfx_SetColor(block);
-                gfx_FillRectangle_NoClip(renderX * 16, renderY * 16, 16, 16);
+#ifdef DEBUG
+            gfx_SetColor(block);
+            gfx_FillRectangle_NoClip(renderX * 16, renderY * 16, 16, 16);
 
-            #else
+#else
 
             switch (block)
             {
@@ -79,8 +79,8 @@ void render(uint24_t posX, uint24_t posY)
                 gfx_SetColor(2);
                 gfx_FillRectangle_NoClip(renderX * 16, renderY * 16, 16, 16);
                 break;
-            }   
-            #endif
+            }
+#endif
         }
     }
     gfx_SetColor(0);
@@ -106,7 +106,7 @@ int main()
     const char saveName[] = "TEST";
 
     uint8_t err = 0;
-    // err = !defaultSave(saveName);
+    err = !writeDefaultSave(saveName);
     if (err)
     {
         os_PutStrFull("Debug Fail");
@@ -123,21 +123,19 @@ int main()
         return 1;
     }
 
-
-
     /* Initialize graphics drawing */
     gfx_Begin();
     gfx_SetDrawBuffer();
 
-    #ifndef DEBUG 
+#ifndef DEBUG
     gfx_SetPalette(global_palette, sizeof_global_palette, 0);
-    #endif
-    
+#endif
+
     gfx_FillScreen(2); // Sky
 
     static uint24_t x = 8000000;
     static uint24_t y = 1024;
-    static uint8_t key;   
+    static uint8_t key;
 
     do
     {
@@ -186,14 +184,14 @@ int main()
 
     writeSave();
 
-    #ifdef TEST
+#ifdef TEST
     dbg_printf("Starting test!\n");
-    for (uint8_t i = 0; i < 20; i++) {
+    for (uint8_t i = 0; i < 20; i++)
+    {
         dbg_printf("Test %d\n", i);
         worldTest();
     }
-    #endif
-
+#endif
 
     // if (err)
     // {

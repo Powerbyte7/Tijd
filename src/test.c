@@ -7,17 +7,21 @@
 #include "fileioc.h"
 
 // Get blocks from unloaded chunks to wipe cache
-static void wipeCache() {
-    for (uint24_t x = 20; x < 800; x++) {
+static void wipeCache()
+{
+    for (uint24_t x = 20; x < 800; x++)
+    {
         x += 20;
         uint8_t block = getBlock(x, 1000);
         assert((block == AIR) && "wipeCache: Expecting air");
     }
 }
 
-int worldTest() {
-    // Create a save file, overwrite if necessary
-    uint8_t error_code = defaultSave("ORBIS");
+void worldTest()
+{
+    // Create a save file, delete existing save
+    ti_Delete("ORBIS");
+    uint8_t error_code = writeDefaultSave("ORBIS");
     assert((error_code != 0) && "worldTest: World save error");
 
     error_code = loadSave("ORBIS");
