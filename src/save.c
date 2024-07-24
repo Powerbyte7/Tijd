@@ -63,7 +63,10 @@ save_error_t registerChunkSave(uint24_t chunkID)
             s_saveHeader.chunkLookup[index].index = s_saveHeader.chunkCount;
 
             // Resize to avoid ti_Seek reaching EOF and breaking saveChunk()
-            ti_Resize(ti_GetSize(s_activeSaveHandle) + sizeof(chunk_t), s_activeSaveHandle);
+            chunk_t emptyChunk = {
+                .chunkID = 0,
+            };
+            ti_Write(&emptyChunk, sizeof(emptyChunk), 1, s_activeSaveHandle);
             s_saveHeader.chunkCount += 1;
 
 #ifdef DEBUG
@@ -127,10 +130,16 @@ save_error_t loadChunk(chunk_t *destination, uint24_t chunkID)
         return LOOKUP_ERROR;
     }
 
+    assert((sizeof(*destination) == sizeof(chunk_t)) && "Match idk");
+
     uint24_t saveOffset = (index * sizeof(*destination)) + s_saveChunkOffset;
     ti_Seek(saveOffset, SEEK_SET, s_activeSaveHandle);
     uint8_t count = ti_Read(destination, sizeof(*destination), 1, s_activeSaveHandle);
     dbg_printf("Loading chunkID %d, index %d, offset %d\n", chunkID, index, ti_Tell(s_activeSaveHandle));
+
+    if (chunkID != destination->chunkID) {
+        dbg_printf("Expected ID %d, got ID %d\n", chunkID, destination->chunkID);
+    }
     assert((count == 1) && "Unable to read chunk from save");
     assert((chunkID == destination->chunkID) && "loadChunk: ChunkID mismatch");
 
@@ -156,6 +165,7 @@ save_error_t saveChunk(chunk_t *chunk)
 
     uint24_t saveOffset = (index * sizeof(*chunk)) + s_saveChunkOffset;
     assert((saveOffset < ti_GetSize(s_activeSaveHandle)) && "saveOffset out of bounds");
+    assert((sizeof(*chunk) == sizeof(chunk_t)) && "Match idk");
 
     ti_Seek(saveOffset, SEEK_SET, s_activeSaveHandle);
 
@@ -176,6 +186,7 @@ save_error_t saveChunk(chunk_t *chunk)
     uint8_t readcount = ti_Read(&test, sizeof(test), 1, s_activeSaveHandle);
     assert((readcount == 1) && "Unable to load updated chunk from save");
     assert((test.chunkID == chunk->chunkID) && "Writing/reading should match");
+    assert((chunk->chunkID != 0) && "readChunk: Expecting ChunkID to be non-zero.");
 
     return OK;
 }
@@ -212,6 +223,7 @@ save_error_t writeSave()
 
 #ifdef DEBUG
     const uint8_t actualSaveCount = (ti_GetSize(s_activeSaveHandle) - s_saveChunkOffset) / sizeof(chunk_t);
+    dbg_printf("Expected: %d, Actual: %d", s_saveHeader.chunkCount, actualSaveCount);
     assert((s_saveHeader.chunkCount == actualSaveCount) && "Number of chunks should match savecount");
 #endif
 
