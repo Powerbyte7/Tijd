@@ -66,7 +66,9 @@ save_error_t registerChunkSave(uint24_t chunkID)
             chunk_t emptyChunk = {
                 .chunkID = 0,
             };
-            ti_Write(&emptyChunk, sizeof(emptyChunk), 1, s_activeSaveHandle);
+            ti_Seek(0, SEEK_END, s_activeSaveHandle);
+            uint8_t count = ti_Write(&emptyChunk, sizeof(emptyChunk), 1, s_activeSaveHandle);
+            assert((count == 1) && "Failed to make chunk allocation");
             s_saveHeader.chunkCount += 1;
 
 #ifdef DEBUG
@@ -164,13 +166,13 @@ save_error_t saveChunk(chunk_t *chunk)
     }
 
     uint24_t saveOffset = (index * sizeof(*chunk)) + s_saveChunkOffset;
-    assert((saveOffset < ti_GetSize(s_activeSaveHandle)) && "saveOffset out of bounds");
-    assert((sizeof(*chunk) == sizeof(chunk_t)) && "Match idk");
+    uint24_t size = ti_GetSize(s_activeSaveHandle);
+    dbg_printf("saveOffset: %d, size: %d\n", saveOffset, size);
+    assert((saveOffset < size) && "saveOffset out of bounds");
 
     ti_Seek(saveOffset, SEEK_SET, s_activeSaveHandle);
 
     uint8_t writeCount = ti_Write(chunk, sizeof(*chunk), 1, s_activeSaveHandle);
-
     assert((writeCount == 1) && "Unable to write updated chunk to save");
 
     if (writeCount != 1)
