@@ -106,17 +106,20 @@ int main()
     const char saveName[] = "TEST";
 
     uint8_t err = 0;
-    err = !writeDefaultSave(saveName);
+    err = writeDefaultSave(saveName);
     if (err)
     {
-        os_PutStrFull("Debug Fail");
+        os_PutStrFull("Save Write Fail");
+        while (os_GetCSC() != sk_Clear)
+        {
+        }
         return 1;
     }
 
     err = !loadSave(saveName);
     if (err)
     {
-        os_PutStrFull("Save Fail");
+        os_PutStrFull("Save Load Fail");
         while (os_GetCSC() != sk_Clear)
         {
         }
@@ -193,11 +196,11 @@ int main()
     }
 #endif
 
-    // if (err)
-    // {
-    //     os_PutStrFull("Chunk fail");
-    //     while (os_GetCSC() != sk_Clear)
-    //     {
-    //     }
-    // }
+    if (err)
+    {
+        os_PutStrFull("Program Error");
+        while (os_GetCSC() != sk_Clear)
+        {
+        }
+    }
 }

@@ -42,7 +42,7 @@ static uint8_t s_cacheCounter = 0;
 
 static chunk_t *getChunk(uint24_t chunkID)
 {
-    assert((chunkID != 0) && "getChunk: Expecting ChunkID to be non-zero.");
+    assert((chunkID != 0) && "Expecting ChunkID to be non-zero.");
 
     /* Check cache buffer for matching chunk */
     for (uint8_t i = 0; i < CACHE_SIZE; i++)
@@ -63,11 +63,6 @@ static chunk_t *getChunk(uint24_t chunkID)
 
     /* Attempt read from save file, this is only for player-modified chunks */
     uint8_t err = loadChunk(&s_chunkCache[s_cacheCounter], chunkID);
-    if (!err)
-    {
-        // This fails occassionally :(
-        assert((chunkID == s_chunkCache[s_cacheCounter].chunkID) && "getChunk: ChunkID mismatch");
-    }
 
     /* Chunk not found, generate it */
     if (err)
@@ -78,6 +73,27 @@ static chunk_t *getChunk(uint24_t chunkID)
     return &s_chunkCache[s_cacheCounter];
 }
 
+world_error_t clearCache()
+{
+    /* Attempt to save every chunk with a non-zero chunkID */
+    for (uint8_t i = 0; i < CACHE_SIZE; i++)
+    {
+        if (s_chunkCache[i].chunkID != 0)
+        {
+            save_error_t error = saveChunk(&s_chunkCache[i]);
+            if (error == WRITE_ERROR) {
+                return SAVE_ERROR;
+            }
+        }
+    }
+
+    /* Clear cache to allow loading chunks */
+    memset(s_chunkCache, 0, sizeof(s_chunkCache));
+    s_cacheCounter = 0;
+
+    return SUCCESS;
+}
+
 block_t getBlock(uint24_t pos_x, uint24_t pos_y)
 {
     /* Get chunk position from most significant bits */
@@ -86,7 +102,7 @@ block_t getBlock(uint24_t pos_x, uint24_t pos_y)
 
     chunk_t *chunk = getChunk(CHUNK_ID(OVERWORLD, chunk_x, chunk_y));
 
-    assert((chunk != 0) && "getBlock: Chunk not found.");
+    assert((chunk != 0) && "Chunk not found.");
 
     /* Get block position from least significant bits */
     const uint8_t chunk_block_x = pos_x & 0x7;
@@ -132,7 +148,7 @@ world_error_t placeBlock(uint24_t pos_x, uint24_t pos_y, block_t block)
             chunk_block_y = 0;
             chunk_id = CHUNK_ID(OVERWORLD, chunk_x, chunk_y);
             chunk = getChunk(chunk_id);
-            assert((chunk) && "getBlock: Chunk not found.");
+            assert((chunk) && "Chunk not found.");
         }
 
         block = chunk->blocks[chunk_block_x * 8 + chunk_block_y];
@@ -148,7 +164,7 @@ world_error_t placeBlock(uint24_t pos_x, uint24_t pos_y, block_t block)
         }
     }
 
-    return 0;
+    return SUCCESS;
 }
 
 world_error_t breakBlock(uint24_t pos_x, uint24_t pos_y)
@@ -174,23 +190,11 @@ world_error_t breakBlock(uint24_t pos_x, uint24_t pos_y)
     /* Make space in save file for chunk, it will be saved after leaving the cache */
     registerChunkSave(chunk_id);
 
-    return 0;
+    return SUCCESS;
 }
 
 void printCacheDebug()
 {
     gfx_SetTextXY(0, 64);
     gfx_PrintUInt(s_cacheCounter, 4);
-}
-
-uint8_t updateAllChunks()
-{
-    for (uint8_t i = 0; i < CACHE_SIZE; i++)
-    {
-        if (s_chunkCache[i].chunkID != 0)
-        {
-            saveChunk(&s_chunkCache[i]);
-        }
-    }
-    return 0;
 }

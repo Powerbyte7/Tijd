@@ -16,6 +16,7 @@ typedef enum
     WRITE_ERROR,
     LOOKUP_ERROR,
     READ_ERROR,
+    OPEN_ERROR,
     CLOSE_ERROR,
     INVALID_CHUNK = 0x100000
 } save_error_t;

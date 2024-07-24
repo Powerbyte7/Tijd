@@ -11,7 +11,8 @@
 #define CHUNK_SIZE 8
 #define CHUNK_AREA (CHUNK_SIZE * CHUNK_SIZE)
 
-typedef enum {
+typedef enum
+{
     VOID,
     OVERWORLD,
     URA,
@@ -40,18 +41,19 @@ typedef enum
 {
     SUCCESS = 0,
     LOAD_ERROR,
+    SAVE_ERROR,
     BLOCK_OCCUPIED,
 } world_error_t;
 
 block_t getBlock(uint24_t pox_x, uint24_t pox_y);
+
 world_error_t placeBlock(uint24_t pox_x, uint24_t pox_y, block_t block);
+
 world_error_t breakBlock(uint24_t pox_x, uint24_t pox_y);
 
+world_error_t clearCache();
 
-
-uint8_t saveWorld();
 void printCacheDebug();
-uint8_t updateAllChunks();
 
 
 #endif
